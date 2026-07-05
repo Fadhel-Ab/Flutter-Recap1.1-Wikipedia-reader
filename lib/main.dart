@@ -13,6 +13,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel=ArticleViewModel(ArticleModel());
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('Wikipedia Flutter')),
@@ -28,7 +29,7 @@ class ArticleModel {
       'en.wikipedia.org',
       '/api/rest_v1/page/random/summary',
     );
-    final response = await get(uri);
+    final response = await get(uri);  
 
     if (response.statusCode != 200 ) {
       throw const HttpException('Failed to update resource');
@@ -37,4 +38,36 @@ class ArticleModel {
 
     return Summary.fromJson(jsonDecode(response.body)as Map<String ,Object?>);
   }
+}
+
+class ArticleViewModel extends ChangeNotifier {
+  final ArticleModel model;
+  Summary? summary;
+  Exception? error;
+  bool isLoading = false;
+
+  ArticleViewModel(this.model) {
+    fetchArticle();
+  }
+
+  Future<void> fetchArticle() async {
+    isLoading=true;
+    notifyListeners();
+
+    //the logic here
+    try {
+      summary = await model.getRandomArticleSummary();
+       print('Article loaded: ${summary!.titles.normalized}');
+      error=null;
+    } on HttpException catch (e){
+      print('Error loading article: ${e.message}'); // Temporary
+      error=e;
+      summary=null;
+    }
+
+    //and then we put stuff back to where it was
+    isLoading=false;
+    notifyListeners();
+  }
+
 }
